@@ -22,14 +22,17 @@ jobs:
           find . -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.gif" -o -name "*.pdf" -o -name "*.wav" -o -name "*.mp4" -o -name "*.mp3" -o -name "*.webm" \) -exec rm -f {} +
           rm -rf docs/ infographic/ website/ landingpage/
           
-          # 2. Wipe Git history to prevent old binaries from being pushed
+          # 2. Inject Hugging Face Configuration into README.md
+          echo -e "---\ntitle: Hermes Agent\nemoji: 🤖\ncolorFrom: blue\ncolorTo: purple\nsdk: docker\napp_port: 8000\n---\n$(cat README.md)" > README.md
+          
+          # 3. Wipe Git history to prevent old binaries from being pushed
           rm -rf .git
           git init
           git checkout -b main
           git config user.email "bot@example.com"
           git config user.name "Deploy Bot"
           
-          # 3. Create a fresh, single commit and force push it
+          # 4. Create a fresh, single commit and force push it
           git add .
           git commit -m "Deploy to Hugging Face"
           git push --force https://faturismee:$HF_TOKEN@huggingface.co/spaces/faturismee/myaiagent main
