@@ -38,4 +38,4 @@ echo "=> Starting background sync for WhatsApp session..."
 echo "=> Starting Hermes Gateway with Litestream Database Replication..."
 # Execute litestream replicate which wraps the hermes gateway process.
 # Litestream streams DB changes to R2 in real-time as long as the process is alive.
-exec litestream replicate -exec "hermes gateway start --port 8000" -config /home/user/app/litestream.yml
+exec litestream replicate -exec "/home/user/app/.venv/bin/hermes gateway start --port 8000" -config /home/user/app/litestream.yml

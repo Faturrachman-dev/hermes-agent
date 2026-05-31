@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y git curl wget unzip rclone tzdata && \
 RUN useradd -m -u 1000 user
 USER user
 ENV HOME=/home/user \
-    PATH=/home/user/.local/bin:/home/user/app/venv/bin:$PATH \
+    PATH=/home/user/.local/bin:/home/user/app/.venv/bin:$PATH \
     HERMES_HOME=/home/user/.hermes
 
 WORKDIR /home/user/app
