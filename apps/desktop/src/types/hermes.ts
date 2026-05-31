@@ -290,6 +290,7 @@ export interface SessionRuntimeInfo {
   config_warning?: string
   credential_warning?: string
   cwd?: string
+  desktop_contract?: number
   fast?: boolean
   model?: string
   personality?: string

@@ -1024,9 +1024,33 @@ function emitUpdateProgress(payload) {
   }
 }
 
+// Self-heal the tracked update branch: if origin no longer publishes it (e.g.
+// bb/gui was merged into main and deleted), fall back to main and persist so
+// every later check/apply follows main — no manual flip, even for already-
+// installed clients. Read-only ls-remote probe; only flips on a definitive
+// "ref absent" (exit 2), never on a transient network error, so a flaky
+// connection can't strand a user on the wrong branch.
+async function resolveHealedBranch(updateRoot, branch) {
+  if (!branch || branch === 'main') {
+    return branch || 'main'
+  }
+
+  const probe = await runGit(['ls-remote', '--exit-code', '--heads', 'origin', branch], { cwd: updateRoot })
+  if (probe.code !== 2) {
+    return branch
+  }
+
+  rememberLog(`[updates] origin/${branch} is gone (merged?); falling back to main`)
+  const config = readDesktopUpdateConfig()
+  if (config.branch !== 'main') {
+    writeDesktopUpdateConfig({ ...config, branch: 'main' })
+  }
+  return 'main'
+}
+
 async function checkUpdates() {
   const updateRoot = resolveUpdateRoot()
-  const { branch } = readDesktopUpdateConfig()
+  let { branch } = readDesktopUpdateConfig()
   const gitDir = path.join(updateRoot, '.git')
   if (!directoryExists(gitDir)) {
     return {
@@ -1038,6 +1062,7 @@ async function checkUpdates() {
     }
   }
 
+  branch = await resolveHealedBranch(updateRoot, branch)
   const fetched = await runGit(['fetch', '--quiet', 'origin', branch], { cwd: updateRoot })
   if (fetched.code !== 0) {
     return {
@@ -1150,9 +1175,10 @@ async function applyUpdates(opts = {}) {
       let command = 'hermes update'
       try {
         const head = await runGit(['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: updateRoot })
-        const branch = (head.stdout || '').trim()
-        if (head.code === 0 && branch && branch !== 'HEAD' && branch !== 'main') {
-          command = `hermes update --branch ${branch}`
+        const current = (head.stdout || '').trim()
+        if (head.code === 0 && current && current !== 'HEAD') {
+          const branch = await resolveHealedBranch(updateRoot, current)
+          if (branch !== 'main') command = `hermes update --branch ${branch}`
         }
       } catch {
         // Best-effort: fall back to bare `hermes update` if branch detection fails.
@@ -1257,12 +1283,15 @@ async function applyUpdatesPosixInApp(opts = {}) {
     PATH: [extraPath, process.env.PATH].filter(Boolean).join(path.delimiter)
   }
 
-  // Branch-pin so a non-main checkout doesn't get switched to main.
+  // Branch-pin so a non-main checkout doesn't get switched to main (and self-heal
+  // to main when the pinned branch no longer exists on origin).
   let branchArgs = []
   try {
     const head = await runGit(['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: updateRoot })
-    const branch = (head.stdout || '').trim()
-    if (head.code === 0 && branch && branch !== 'HEAD') branchArgs = ['--branch', branch]
+    const current = (head.stdout || '').trim()
+    if (head.code === 0 && current && current !== 'HEAD') {
+      branchArgs = ['--branch', await resolveHealedBranch(updateRoot, current)]
+    }
   } catch {
     // best effort
   }

@@ -1503,6 +1503,13 @@ def _current_profile_name() -> str:
         return "default"
 
 
+# Monotonic GUI<->backend contract version. The desktop app refuses to drive a
+# backend reporting less than its required value (or none at all — a pre-GUI
+# checkout), surfacing a one-click "update to align" prompt instead of failing
+# cryptically downstream. Bump whenever the desktop's backend contract changes.
+DESKTOP_BACKEND_CONTRACT = 1
+
+
 def _session_info(agent, session: dict | None = None) -> dict:
     if session is None:
         for candidate in _sessions.values():
@@ -1531,6 +1538,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
         "branch": _git_branch_for_cwd(cwd),
         "personality": str(personality or ""),
         "running": bool((session or {}).get("running")),
+        "desktop_contract": DESKTOP_BACKEND_CONTRACT,
         "version": "",
         "release_date": "",
         "update_behind": None,

@@ -50,6 +50,36 @@ export const resetUpdateApplyState = () => $updateApply.set(IDLE)
 const UPDATE_TOAST_ID = 'desktop-update-available'
 const UPDATE_TOAST_DISMISSED_KEY = 'hermes:update-toast-dismissed-sha'
 
+// Must match tui_gateway's DESKTOP_BACKEND_CONTRACT that this build was written
+// against. The backend reports its own value in session runtime info; a lower
+// value (or none — a pre-GUI checkout) means GUI<->backend skew.
+const REQUIRED_BACKEND_CONTRACT = 1
+const SKEW_TOAST_ID = 'backend-contract-skew'
+
+/**
+ * Guard against a desktop GUI talking to a backend that predates its contract
+ * (e.g. a bb/gui-built app pointed at a `main` checkout). Rather than failing
+ * cryptically downstream, surface a persistent warning with a one-click align
+ * that runs the normal update flow (which self-heals to the right branch).
+ */
+export function reportBackendContract(contract: number | undefined): void {
+  if ((contract ?? 0) >= REQUIRED_BACKEND_CONTRACT) {
+    dismissNotification(SKEW_TOAST_ID)
+
+    return
+  }
+
+  notify({
+    action: { label: 'Update Hermes', onClick: () => void applyUpdates() },
+    durationMs: 0,
+    id: SKEW_TOAST_ID,
+    kind: 'warning',
+    message:
+      'Your Hermes backend is older than this desktop build and may not work correctly. Update to align them.',
+    title: 'Backend out of date'
+  })
+}
+
 function markToastDismissed(sha: string | undefined) {
   if (sha) {
     persistString(UPDATE_TOAST_DISMISSED_KEY, sha)
@@ -154,6 +184,7 @@ export async function applyUpdates(opts: DesktopUpdateApplyOptions = {}): Promis
 
   try {
     const result = await bridge.apply(opts)
+
     // CLI install with no staged updater: not an error — the user just runs
     // `hermes update` themselves. Land on a dedicated manual state so the
     // overlay shows the command + copy button instead of a dead retry loop.
@@ -166,6 +197,7 @@ export async function applyUpdates(opts: DesktopUpdateApplyOptions = {}): Promis
         command: result.command ?? 'hermes update'
       })
     }
+
     return result
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
