@@ -18,11 +18,9 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 1. Remove binary directories that Hugging Face rejects
-          rm -rf docs/ infographic/ website/ assets/ landingpage/
-          rm -rf plugins/hermes-achievements/docs/
-          rm -rf skills/research/research-paper-writing/templates/
-          rm -rf tools/neutts_samples/
+          # 1. Remove ALL binary files that Hugging Face rejects
+          find . -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.gif" -o -name "*.pdf" -o -name "*.wav" -o -name "*.mp4" -o -name "*.mp3" -o -name "*.webm" \) -exec rm -f {} +
+          rm -rf docs/ infographic/ website/ landingpage/
           
           # 2. Wipe Git history to prevent old binaries from being pushed
           rm -rf .git
