@@ -4167,6 +4167,40 @@ async def get_toolsets():
     return result
 
 
+class ToolsetToggle(BaseModel):
+    enabled: bool
+
+
+@app.put("/api/tools/toolsets/{name}")
+async def toggle_toolset(name: str, body: ToolsetToggle):
+    """Enable/disable a configurable toolset for the desktop (cli) platform.
+
+    Persists to ``platform_toolsets.cli`` via the same ``_save_platform_tools``
+    helper the CLI ``hermes tools`` picker uses, so the GUI and CLI stay in
+    lockstep. Returns 400 for unknown toolset keys.
+    """
+    from hermes_cli.tools_config import (
+        _get_effective_configurable_toolsets,
+        _get_platform_tools,
+        _save_platform_tools,
+    )
+
+    valid = {ts_key for ts_key, _, _ in _get_effective_configurable_toolsets()}
+    if name not in valid:
+        raise HTTPException(status_code=400, detail=f"Unknown toolset: {name}")
+
+    config = load_config()
+    enabled = set(
+        _get_platform_tools(config, "cli", include_default_mcp_servers=False)
+    )
+    if body.enabled:
+        enabled.add(name)
+    else:
+        enabled.discard(name)
+    _save_platform_tools(config, "cli", enabled)
+    return {"ok": True, "name": name, "enabled": body.enabled}
+
+
 # ---------------------------------------------------------------------------
 # Raw YAML config endpoint
 # ---------------------------------------------------------------------------

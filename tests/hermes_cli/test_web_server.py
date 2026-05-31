@@ -1312,6 +1312,33 @@ class TestNewEndpoints:
             },
         ]
 
+    def test_toggle_toolset_enable_disable(self):
+        """PUT /api/tools/toolsets/{name} round-trips through config and the list view."""
+        # Enable a toolset that is off-by-default so the state change is observable.
+        resp = self.client.put("/api/tools/toolsets/x_search", json={"enabled": True})
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["ok"] is True
+        assert body["name"] == "x_search"
+        assert body["enabled"] is True
+
+        listing = {t["name"]: t for t in self.client.get("/api/tools/toolsets").json()}
+        assert listing["x_search"]["enabled"] is True
+
+        # Disable it again.
+        resp = self.client.put("/api/tools/toolsets/x_search", json={"enabled": False})
+        assert resp.status_code == 200
+        assert resp.json()["enabled"] is False
+
+        listing = {t["name"]: t for t in self.client.get("/api/tools/toolsets").json()}
+        assert listing["x_search"]["enabled"] is False
+
+    def test_toggle_toolset_unknown_returns_400(self):
+        resp = self.client.put(
+            "/api/tools/toolsets/not_a_real_toolset", json={"enabled": True}
+        )
+        assert resp.status_code == 400
+
     def test_config_raw_get(self):
         resp = self.client.get("/api/config/raw")
         assert resp.status_code == 200
