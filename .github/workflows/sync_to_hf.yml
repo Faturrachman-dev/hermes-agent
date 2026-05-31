@@ -17,4 +17,21 @@ jobs:
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://faturismee:$HF_TOKEN@huggingface.co/spaces/faturismee/myaiagent main
+        run: |
+          # 1. Remove binary directories that Hugging Face rejects
+          rm -rf docs/ infographic/ website/ assets/ landingpage/
+          rm -rf plugins/hermes-achievements/docs/
+          rm -rf skills/research/research-paper-writing/templates/
+          rm -rf tools/neutts_samples/
+          
+          # 2. Wipe Git history to prevent old binaries from being pushed
+          rm -rf .git
+          git init
+          git checkout -b main
+          git config user.email "bot@example.com"
+          git config user.name "Deploy Bot"
+          
+          # 3. Create a fresh, single commit and force push it
+          git add .
+          git commit -m "Deploy to Hugging Face"
+          git push --force https://faturismee:$HF_TOKEN@huggingface.co/spaces/faturismee/myaiagent main
