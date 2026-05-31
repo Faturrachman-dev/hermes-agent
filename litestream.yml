@@ -1,0 +1,10 @@
+dbs:
+  - path: /home/user/.hermes/session_db.sqlite
+    replicas:
+      - type: s3
+        endpoint: ${R2_ENDPOINT_URL}
+        bucket: ${R2_BUCKET_NAME}
+        path: hermes_db
+        access-key-id: ${R2_ACCESS_KEY_ID}
+        secret-access-key: ${R2_SECRET_ACCESS_KEY}
+        region: auto
