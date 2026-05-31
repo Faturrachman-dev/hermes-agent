@@ -17,5 +17,4 @@ jobs:
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force 
-        https://faturismee:$HF_TOKEN@huggingface.co/spaces/faturismee/myaiagent main
+        run: git push --force https://faturismee:$HF_TOKEN@huggingface.co/spaces/faturismee/myaiagent main
