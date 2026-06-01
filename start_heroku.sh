@@ -32,7 +32,7 @@ echo "=> Starting background sync for WhatsApp session..."
   done
 ) &
 
-echo "=> Starting Hermes Gateway with Litestream Database Replication on Port ${PORT}..."
+echo "=> Starting Hermes Gateway with Litestream Database Replication..."
 # Execute litestream replicate which wraps the hermes gateway process.
-# IMPORTANT: Heroku dynamically assigns the PORT environment variable. We MUST use it.
-exec litestream replicate -exec "/home/user/app/.venv/bin/hermes gateway start --port ${PORT}" -config /home/user/app/litestream.yml
+# We use `gateway run` to run in the foreground for Docker.
+exec litestream replicate -exec "/home/user/app/.venv/bin/hermes gateway run" -config /home/user/app/litestream.yml
